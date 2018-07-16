@@ -1,9 +1,10 @@
 Package: ml.festival.proudlock
 Name: ProudLock
-Depends: mobilesubstrate
+Depends: mobilesubstrate, firmware (>= 11.0)
+Conflicts: gsc.main-screen-width (= 1125), gsc.main-screen-height (= 2436)
 Version: 0.0.1
 Architecture: iphoneos-arm
-Description: An awesome MobileSubstrate tweak!
+Description: Be proud of that lock!
 Maintainer: Sniper_GER <sniperger@festival.ml>
 Author: Sniper_GER <sniperger@festival.ml>
 Section: Tweaks
