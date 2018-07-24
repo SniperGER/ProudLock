@@ -9,11 +9,10 @@ ProudLock enables the Face ID latch glyph, internally called SBUIProudLockIconVi
 Now with an installable package! Does not work on iPhone X, because it already has the Face ID latch glyph.
 
 **Compatibility**
-* iPhone (except iPhone x)
+* iPhone (except iPhone X)
 * iPad
 
 *Requires iOS 11 and Touch ID*
 
-### Fixed issues
-* Date View, Notifications and Widgets layouts have been fixed
-* Includes a fixed CAML bundle for @2x screen devices (also known as non-Plus models)
+### Known Issues
+* Date, Notifications, Widgets and controls need to be moved down properly (reacting to scrolling on different views), and I don't know how to do that.'
