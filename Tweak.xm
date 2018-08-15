@@ -1,140 +1,136 @@
-@interface SBDashBoardProudLockViewController : UIViewController
-- (void)_setIconVisible:(BOOL)arg1 animated:(BOOL)arg2;
-- (void)_setIconState:(long long)arg1 animated:(BOOL)arg2;
-@end
+#import "Tweak.h"
 
+static NSDictionary* latchPreferences;
+static SBDashBoardProudLockViewController* proudLockViewController;
+static SBUIProudLockIconView* proudLockIconView;
 
-@interface SBUIProudLockIconView : UIView
-@end
+static CGFloat yOffset = 0;
 
-
-@interface SBDashBoardViewController : UIViewController {
-    SBDashBoardProudLockViewController* _proudLockViewController;
-}
-@end
-
-
-@interface SBDashBoardView : UIView {
-    SBUIProudLockIconView* _proudLockIconView;
-}
-@end
-
-
-@interface SBFLockScreenDateView : UIView
-@end
-
-
-SBDashBoardProudLockViewController* proudLockViewController;
-SBUIProudLockIconView* proudLockIconView;
-
-
-CGRect dateViewFrame = CGRectZero;
-
-
-// Create an instance of SBDashBoardProudLockViewController and add it to SBDashBoardViewController
 %hook SBDashBoardViewController
 - (void)loadView {
-    proudLockViewController = MSHookIvar<SBDashBoardProudLockViewController*>(self, "_proudLockViewController");
-    if (!proudLockViewController) {
-        proudLockViewController = [%c(SBDashBoardProudLockViewController) new];
-        MSHookIvar<SBDashBoardProudLockViewController*>(self,"_proudLockViewController") = proudLockViewController;
-    }
-    
-    %orig;
+	proudLockViewController = MSHookIvar<SBDashBoardProudLockViewController*>(self, "_proudLockViewController");
+	if (!proudLockViewController) {
+		proudLockViewController = [%c(SBDashBoardProudLockViewController) new];
+		MSHookIvar<SBDashBoardProudLockViewController*>(self,"_proudLockViewController") = proudLockViewController;
+	}
+	
+	%orig;
 }
 %end    // %hook SBDashBoardViewController
 
 
-// Add SBDashBoardProudLockViewController's _proudLockIconView to SBDashBoardView
+
 %hook SBDashBoardView
 - (void)layoutSubviews {
-    proudLockIconView = MSHookIvar<SBUIProudLockIconView*>(self, "_proudLockIconView");
-    if (!proudLockIconView) {
-        proudLockIconView = (SBUIProudLockIconView*)proudLockViewController.view;
-        MSHookIvar<SBUIProudLockIconView*>(self, "_proudLockIconView") = proudLockIconView;
-        
-        [self addSubview:proudLockIconView];
-        [proudLockViewController _setIconVisible:YES animated:NO];
-        [proudLockViewController _setIconState:1 animated:NO];
-    }
-    
-    %orig;
+	%orig;
+	
+	proudLockIconView = MSHookIvar<SBUIProudLockIconView*>(self, "_proudLockIconView");
+	if (!proudLockIconView) {
+		proudLockIconView = (SBUIProudLockIconView*)proudLockViewController.view;
+		MSHookIvar<SBUIProudLockIconView*>(self, "_proudLockIconView") = proudLockIconView;
+		
+		[[[self subviews] lastObject] addSubview:proudLockIconView];
+		[proudLockViewController _setIconVisible:YES animated:NO];
+		[proudLockViewController _setIconState:1 animated:NO];
+	}
 }
 %end    // %hook SBDashBoardView
 
 
-// Fix unwanted transforms on iPad
-// I don't know if this also happens on iPhone, but you can never know ;)
-%hook SBUIProudLockIconView
+
+%hook SBDashBoardPasscodeViewController
+- (void)viewWillAppear:(BOOL)arg1 {
+	MSHookIvar<SBUIProudLockIconView*>(self, "_proudLockIconViewToUpdate") = proudLockIconView;
+}
+%end
+
+
+
+%hook SBFLockScreenDateView
+- (void)layoutSubviews {
+	%orig;
+	
+	UIView* timeView = MSHookIvar<UIView*>(self, "_timeLabel");
+	CGRect timeViewRect = timeView.frame;
+	timeViewRect.origin.y = (35 + yOffset);
+	[timeView setFrame:timeViewRect];
+	
+	UIView* dateSubtitleView = MSHookIvar<UIView*>(self, "_dateSubtitleView");
+	CGRect dateSubtitleRect = dateSubtitleView.frame;
+	dateSubtitleRect.origin.y = timeViewRect.size.height + (35 + yOffset) - 7;
+	[dateSubtitleView setFrame:dateSubtitleRect];
+	
+	UIView* customSubtitleView = MSHookIvar<UIView*>(self, "_customSubtitleView");
+	CGRect customSubtitleRect = customSubtitleView.frame;
+	customSubtitleRect.origin.y = timeViewRect.size.height + (35 + yOffset) - 7;
+	[customSubtitleView setFrame:customSubtitleRect];
+}
+%end	// %hook SBFLockScreenDateView
+
+
+
+%hook WGWidgetGroupViewController
+- (void)viewDidLayoutSubviews {
+	CGRect origFrame = self.view.frame;
+	origFrame.origin.y = (35 + yOffset);
+	[self.view setFrame:origFrame];
+	
+	%orig;
+}
+%end	// %hook WGWidgetGroupViewController
+
+
+
+%hook NCNotificationListCollectionView
 - (void)setFrame:(CGRect)arg1 {
-    arg1.origin.y = 53;
-    %orig(arg1);
+	arg1.origin.y = (35 + yOffset);
+	%orig(arg1);
 }
 
+- (CGRect)frame {
+	CGRect r = %orig;
+	r.origin.y = (35 + yOffset);
+	return r;
+}
+%end	// %hook NCNotificationListCollectionView
+
+
+
+%hook SBDashBoardAdjunctListView
+- (void)setFrame:(CGRect)arg1 {
+	arg1.origin.y += (35 + yOffset);
+	%orig(arg1);
+}
+%end	// %hook NCNotificationListCollectionView
+
+
+
+%hook SBUIProudLockIconView
 - (void)setTransform:(CGAffineTransform)arg1 {
-    %orig(CGAffineTransformIdentity);
+	%orig(CGAffineTransformMakeTranslation(0, yOffset));
 }
 %end    // %hook SBUIProudLockIconView
 
 
-// Move down the Lock Screen Clock
-%hook SBFLockScreenDateView
-- (void)setFrame:(CGRect)arg1 {
-    if (!CGRectEqualToRect(arg1, CGRectZero) && CGRectEqualToRect(dateViewFrame, CGRectZero)) {
-        dateViewFrame = arg1;
-        dateViewFrame.origin.y += 35;
-    }
-    
-    if (!CGRectEqualToRect(dateViewFrame, CGRectZero)) {
-        %orig(dateViewFrame);
-    } else {
-        %orig;
-    }
-}
-%end    // %hook SBFLockScreenDateView
 
-
-// Fix glitches when Lock Screen fade animation starts
-%hook SBFLockScreenDateSubtitleView
-- (void)setFrame:(CGRect)arg1 {
-    if (!CGRectEqualToRect(dateViewFrame, CGRectZero)) {
-        CGRect dateSubtitleFrame = CGRectMake(arg1.origin.x,
-                                              dateViewFrame.size.height - arg1.size.height,
-                                              arg1.size.width,
-                                              arg1.size.height);
-        %orig(dateSubtitleFrame);
-    } else {
-        %orig;
-    }
-}
-%end    // %hook SBFLockScreenDateView
-
-
-// Load a fixed CAML bundle with @2x assets
 %hook SBUICAPackageView
 - (id)initWithPackageName:(id)arg1 inBundle:(id)arg2 {
-    NSBundle* themeBundle = [NSBundle bundleWithPath:@"/Library/Application Support/ProudLock/biglock_fixed.bundle"];
-    return %orig(@"biglock_fixed", themeBundle);
+	NSBundle* themeBundle = [NSBundle bundleWithPath:@"/Library/Application Support/ProudLock/biglock_fixed.bundle"];
+	return %orig(@"biglock_fixed", themeBundle);
 }
 %end    // %hook SBUICAPackageView
 
 
-// Fix notifications offset
-%hook NCNotificationListCollectionView
-- (void)setContentInset:(UIEdgeInsets)arg1 {
-    arg1.top = 240;
-    %orig(arg1);
-}
-%end    // %hook NCNotificationListCollectionView
 
-
-// Fix widgets offset on Lock Screen only
-%hook UIScrollView
-- (void)setContentInset:(UIEdgeInsets)arg1 {
-    if ([self.delegate isKindOfClass:%c(WGMajorListViewController)] && arg1.top == 205) {
-        arg1.top = 240;
-    }
-    
-    %orig(arg1);
+%ctor {
+	if (access(DPKG_PATH, F_OK) != -1) {
+		latchPreferences = [NSMutableDictionary dictionaryWithContentsOfFile:@"/var/mobile/Library/Preferences/ml.festival.proudlock.plist"];
+		
+		BOOL enabled = (BOOL)[[latchPreferences objectForKey:@"enabled"] ?: @YES boolValue];
+		yOffset = (CGFloat)[[latchPreferences objectForKey:@"offsetY"] ?: @0  floatValue];
+		
+		if (enabled) {
+			%init();
+		}
+	}
 }
-%end    // %hook UIScrollView

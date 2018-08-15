@@ -1,5 +1,6 @@
 Package: ml.festival.proudlock
 Name: ProudLock
+Depiction: https://repo.festival.ml/depiction/ml.festival.proudlock
 Depends: mobilesubstrate, firmware (>= 11.0)
 Conflicts: gsc.main-screen-width (= 1125), gsc.main-screen-height (= 2436)
 Version: 0.0.1
